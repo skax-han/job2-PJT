@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>적정 제안 예산 Simulation</title>
+    <style>
+        :root {
+            --primary: #0F172A;
+            --secondary: #475569;
+            --accent: #2563EB;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --input-bg: #FFFDE7; 
+            --input-focus: #FFF9C4;
+            --border: #E2E8F0;
+            --neutral-blue-gray: #E2E8F0; 
+            --dark-slate: #334155; 
+        }
+
+        body {
+            font-family: 'Pretendard', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px 15px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-align: left;
+            letter-spacing: -0.75px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px 25px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--primary);
+            background-color: var(--input-bg);
+            transition: all 0.2s ease;
+        }
+
+        input[type="number"] {
+            text-align: right;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input[readonly] {
+            background-color: var(--neutral-blue-gray);
+            color: #475569;
+            font-weight: 600;
+            cursor: not-allowed;
+            border-color: #CBD5E1;
+        }
+
+        .white-input {
+            background-color: #FFFFFF !important;
+        }
+        .white-input:focus {
+            background-color: #F8FAFC !important;
+        }
+
+        .page-target-panel {
+            grid-column: 3;
+            grid-row: 2 / 4;
+            background: #F8FAFC;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .target-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 5px 8px; 
+            border: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: var(--dark-slate);
+            color: #FFFFFF;
+            font-weight: 700;
+            padding: 8px 8px;
+        }
+
+        td.category-cell, td.category-muted {
+            font-weight: 700;
+            background-color: var(--neutral-blue-gray);
+            color: var(--primary);
+        }
+
+        td.text-left {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .table-input {
+            width: 48px; 
+            padding: 4px 6px;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .table-select {
+            padding: 4px 6px;
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            text-align: center;
+            text-align-last: center;
+        }
+
+        .subtotal-row {
+            background-color: var(--neutral-blue-gray);
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .pm-row {
+            background-color: #F8FAFC;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .total-row {
+            background-color: var(--dark-slate);
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .summary-wrapper {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .summary-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        .summary-card h3 {
+            margin: 0 0 6px 0;
+            font-size: 13px;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .summary-card .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .summary-card.highlight {
+            background-color: #EFF6FF;
+            border-color: #BFDBFE;
+        }
+
+        .summary-card.highlight .value {
+            color: var(--accent);
+        }
+        
+        .ratio-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>적정 제안 예산 Simulation</h1>
+
+    <div class="config-grid">
+        <div class="input-group">
+            <label>고객사명 (Account)</label>
+            <input type="text" id="accountName" value="금융고객사" style="text-align: left;">
+        </div>
+        <div class="input-group">
+            <label>사업명</label>
+            <input type="text" id="projectName" value="차세대 시스템 구축 사업" style="text-align: left;">
+        </div>
+        <div class="input-group">
+            <label>사업규모 (억원, VAT별도)</label>
+            <input type="number" id="projectSize" value="10" min="0" oninput="calculate()">
+        </div>
+
+        <div class="input-group">
+            <label>RFP 공고일</label>
+            <input type="date" id="rfpDate" value="2026-06-01" onchange="updateDuration()">
+        </div>
+        <div class="input-group">
+            <label>입찰일 (제출일)</label>
+            <input type="date" id="bidDate" value="2026-06-15" onchange="updateDuration()">
+        </div>
+        
+        <div class="page-target-panel">
+            <div class="panel-title">작성 페이지수</div>
+            <div class="target-grid">
+                <div class="input-group">
+                    <label>제안서</label>
+                    <input type="number" id="targetProposal" value="100" class="table-input white-input" oninput="onTargetProposalChange()" style="width: 100%;">
+                </div>
+                <div class="input-group">
+                    <label>요약서</label>
+                    <input type="number" id="targetSummary" value="0" class="table-input white-input" oninput="onTargetOthersChange()" style="width: 100%;">
+                </div>
+                <div class="input-group">
+                    <label>발표자료</label>
+                    <input type="number" id="targetPresentation" value="0" class="table-input white-input" oninput="onTargetOthersChange()" style="width: 100%;">
+                </div>
+                <div class="input-group">
+                    <label>별첨</label>
+                    <input type="number" id="targetAppendix" value="0" class="table-input white-input" oninput="onTargetOthersChange()" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>제안기간 (Working Days)</label>
+            <input type="number" id="workingDays" value="11" readonly>
+        </div>
+        <div class="input-group">
+            <label>유사사업 수행경험</label>
+            <select id="experience" onchange="calculate()">
+                <option value="X" selected>없음 (X)</option>
+                <option value="O">있음 (O)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th width="10%">구분</th>
+                    <th width="33%">목차</th>
+                    <th width="15%">비율</th>
+                    <th width="14%">작성 페이지수</th>
+                    <th width="10%">난이도</th>
+                    <th width="9%">소요인력</th>
+                    <th width="9%">소요M/M</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-wrapper">
+        <div class="summary-card">
+            <h3>사내인건비 (억원)</h3>
+            <div class="value" id="internalCost">0.00</div>
+        </div>
+        <div class="summary-card">
+            <h3>사내인건비 外 (억원)</h3>
+            <div class="value" id="externalCost">0.00</div>
+        </div>
+        <div class="summary-card highlight">
+            <h3>적정 제안예산 (억원)</h3>
+            <div class="value" id="totalCost">0.00</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const diffFactors = { "S": 4.0, "A": 2.5, "B": 1.5, "C": 1.0, "D": 0.5, "E": 0.2 };
+
+    const sections = [
+        { type: 'proposal', name: "제안개요 (사업의 이해 등)", ratio: 4, pages: 4, diffStr: "B", needExpAdj: false },
+        { type: 'proposal', name: "사업추진전략 및 방법론 (전략, 적용기술, 방법론 등)", ratio: 11, pages: 11, diffStr: "A", needExpAdj: true },
+        { type: 'proposal', name: "제안사 현황 - 컨소/BP 포함", ratio: 7, pages: 7, diffStr: "D", needExpAdj: false },
+        { type: 'proposal', name: "기술 및 기능 (기능/컨설팅, 데이터, 보안, 제약사항 등)", ratio: 34, pages: 34, diffStr: "B", needExpAdj: true },
+        { type: 'proposal', name: "  - 아키텍처", ratio: 11, pages: 11, diffStr: "S", needExpAdj: false },
+        { type: 'proposal', name: "성능 및 품질 관리 (성능, 품질, 인터페이스, 테스트 등)", ratio: 12, pages: 12, diffStr: "B", needExpAdj: true },
+        { type: 'proposal', name: "사업 관리 부문 (품질, 일정, 보고, 조직, 인력 등)", ratio: 11, pages: 11, diffStr: "C", needExpAdj: false },
+        { type: 'proposal', name: "사업 지원 부문 (교육, 유지보수, 기술이전 등)", ratio: 10, pages: 10, diffStr: "D", needExpAdj: false },
+        { type: 'summary', name: "요약본", ratio: 100, pages: 0, diffStr: "C", needExpAdj: false },
+        { type: 'presentation', name: "설명회", ratio: 100, pages: 0, diffStr: "A", needExpAdj: true },
+        { type: 'appendix', name: "별첨", ratio: 100, pages: 0, diffStr: "E", needExpAdj: false }
+    ];
+
+    function getWorkingDays(startStr, endStr) {
+        if (!startStr || !endStr) return 0;
+        let start = new Date(startStr);
+        let end = new Date(endStr);
+        if (end < start) return 0;
+        
+        let count = 0;
+        let cur = new Date(start);
+        while (cur <= end) {
+            let day = cur.getDay();
+            if (day !== 0 && day !== 6) { count++; }
+            cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+    }
+
+    function updateDuration() {
+        const rfpDate = document.getElementById('rfpDate').value;
+        const bidDate = document.getElementById('bidDate').value;
+        document.getElementById('workingDays').value = getWorkingDays(rfpDate, bidDate);
+        calculate();
+    }
+
+    function getPmPersonnel(size) {
+        if (size >= 100) return 2.0;
+        if (size >= 50) return 1.5;
+        if (size >= 20) return 1.0;
+        return 0.3;
+    }
+
+    function initTableStructure() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        sections.forEach((sec, idx) => {
+            if (sec.type !== 'proposal') return;
+            const tr = document.createElement('tr');
+            let categoryTd = idx === 0 ? `<td rowspan="9" class="category-cell">제안서</td>` : '';
+            let diffOptions = Object.keys(diffFactors).map(d => `<option value="${d}" ${d === sec.diffStr ? 'selected' : ''}>${d}</option>`).join('');
+
+            tr.innerHTML = `
+                ${categoryTd}
+                <td class="text-left">${sec.name}</td>
+                <td>
+                    <div class="ratio-wrapper">
+                        <input type="number" step="0.1" class="table-input" id="ratio_${idx}" value="${sec.ratio}" oninput="onRatioChange(${idx})"> <span>%</span>
+                    </div>
+                </td>
+                <td><input type="number" class="table-input white-input" id="page_${idx}" value="${sec.pages}" oninput="onPageChange(${idx})"></td>
+                <td><select class="table-select" id="diff_${idx}" onchange="onDiffChange(${idx}, this.value)">${diffOptions}</select></td>
+                <td id="pers_${idx}">0.0</td>
+                <td id="mm_${idx}">0.0</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const subtotalTr = document.createElement('tr');
+        subtotalTr.className = 'subtotal-row';
+        subtotalTr.innerHTML = `
+            <td>제안서 계</td>
+            <td><span id="propRatioSum">0.0</span> %</td>
+            <td id="propPageSum">0</td>
+            <td>-</td>
+            <td id="propPersonnelSum">0.0</td>
+            <td id="propMMSum">0.0</td>
+        `;
+        tbody.appendChild(subtotalTr);
+
+        let otherStarted = false;
+        sections.forEach((sec, idx) => {
+            if (sec.type === 'proposal') return;
+            const tr = document.createElement('tr');
+            let categoryTd = !otherStarted ? `<td rowspan="3" class="category-muted">기타 산출물</td>` : '';
+            otherStarted = true;
+            let diffOptions = Object.keys(diffFactors).map(d => `<option value="${d}" ${d === sec.diffStr ? 'selected' : ''}>${d}</option>`).join('');
+
+            tr.innerHTML = `
+                ${categoryTd}
+                <td class="text-left">${sec.name}</td>
+                <td>
+                    <div class="ratio-wrapper">
+                        <input type="number" step="0.1" class="table-input" id="ratio_${idx}" value="${sec.ratio}" oninput="onRatioChange(${idx})"> <span>%</span>
+                    </div>
+                </td>
+                <td><input type="number" class="table-input white-input" id="page_${idx}" value="${sec.pages}" oninput="onPageChange(${idx})"></td>
+                <td><select class="table-select" id="diff_${idx}" onchange="onDiffChange(${idx}, this.value)">${diffOptions}</select></td>
+                <td id="pers_${idx}">0.0</td>
+                <td id="mm_${idx}">0.0</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const pmTr = document.createElement('tr');
+        pmTr.className = 'pm-row';
+        pmTr.innerHTML = `
+            <td class="category-muted">사업관리</td>
+            <td class="text-left">PM / 사업관리</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td id="pmPersonnel">0.3</td>
+            <td id="pmMM">0.0</td>
+        `;
+        tbody.appendChild(pmTr);
+
+        const totalTr = document.createElement('tr');
+        totalTr.className = 'total-row';
+        totalTr.innerHTML = `
+            <td colspan="3">총계</td>
+            <td id="totalPageSum">0</td>
+            <td>-</td>
+            <td id="totalPersonnel">0.0</td>
+            <td id="totalMM">0.0</td>
+        `;
+        tbody.appendChild(totalTr);
+
+        updateDuration();
+    }
+
+    function onTargetProposalChange() {
+        const targetProp = parseFloat(document.getElementById('targetProposal').value) || 0;
+        for (let i = 0; i < 8; i++) {
+            sections[i].pages = Math.round(targetProp * (sections[i].ratio / 100));
+            document.getElementById(`page_${i}`).value = sections[i].pages;
+        }
+        calculate();
+    }
+
+    function onTargetOthersChange() {
+        const targetSum = parseFloat(document.getElementById('targetSummary').value) || 0;
+        sections[8].pages = targetSum;
+        sections[8].ratio = targetSum > 0 ? 100 : 0;
+        document.getElementById(`page_8`).value = targetSum;
+        document.getElementById(`ratio_8`).value = sections[8].ratio.toFixed(1);
+
+        const targetPres = parseFloat(document.getElementById('targetPresentation').value) || 0;
+        sections[9].pages = targetPres;
+        sections[9].ratio = targetPres > 0 ? 100 : 0;
+        document.getElementById(`page_9`).value = targetPres;
+        document.getElementById(`ratio_9`).value = sections[9].ratio.toFixed(1);
+
+        const targetApp = parseFloat(document.getElementById('targetAppendix').value) || 0;
+        sections[10].pages = targetApp;
+        sections[10].ratio = targetApp > 0 ? 100 : 0;
+        document.getElementById(`page_10`).value = targetApp;
+        document.getElementById(`ratio_10`).value = sections[10].ratio.toFixed(1);
+        
+        calculate();
+    }
+
+    function onRatioChange(idx) {
+        const ratio = parseFloat(document.getElementById(`ratio_${idx}`).value) || 0;
+        sections[idx].ratio = ratio;
+        
+        let targetTotal = 100;
+        if (sections[idx].type === 'proposal') targetTotal = parseFloat(document.getElementById('targetProposal').value) || 0;
+        else if (sections[idx].type === 'summary') targetTotal = parseFloat(document.getElementById('targetSummary').value) || 0;
+        else if (sections[idx].type === 'presentation') targetTotal = parseFloat(document.getElementById('targetPresentation').value) || 0;
+        else if (sections[idx].type === 'appendix') targetTotal = parseFloat(document.getElementById('targetAppendix').value) || 0;
+
+        const calculatedPage = Math.round(targetTotal * (ratio / 100));
+        document.getElementById(`page_${idx}`).value = calculatedPage;
+        sections[idx].pages = calculatedPage;
+        calculate();
+    }
+
+    function onPageChange(idx) {
+        const pages = parseFloat(document.getElementById(`page_${idx}`).value) || 0;
+        sections[idx].pages = pages;
+
+        let targetTotal = 100;
+        if (sections[idx].type === 'proposal') targetTotal = parseFloat(document.getElementById('targetProposal').value) || 0;
+        else if (sections[idx].type === 'summary') targetTotal = parseFloat(document.getElementById('targetSummary').value) || 0;
+        else if (sections[idx].type === 'presentation') targetTotal = parseFloat(document.getElementById('targetPresentation').value) || 0;
+        else if (sections[idx].type === 'appendix') targetTotal = parseFloat(document.getElementById('targetAppendix').value) || 0;
+
+        const calculatedRatio = targetTotal > 0 ? (pages / targetTotal) * 100 : 0;
+        document.getElementById(`ratio_${idx}`).value = calculatedRatio.toFixed(1);
+        sections[idx].ratio = calculatedRatio;
+        calculate();
+    }
+
+    function onDiffChange(idx, val) {
+        sections[idx].diffStr = val;
+        calculate();
+    }
+
+    function calculate() {
+        const projectSize = parseFloat(document.getElementById('projectSize').value) || 0;
+        const workingDays = parseFloat(document.getElementById('workingDays').value) || 1;
+        const noExperience = document.getElementById('experience').value === 'X';
+
+        const scaleFactor = 0.56; 
+        const personnelDivisor = workingDays * 3.5;
+        const mmMultiplier = workingDays / 21;
+
+        // 마스터 변수 선언
+        const unitCost = 0.145;        // 기준 단가 고정
+        const kpiReduction = 0.75;     // 전사 OI 개선 25% 절감율 (75% 반영)
+        const externalRatio = 0.0025;  // 제안비_인건비 外 경비 비율 (0.25%)
+
+        const pmPersonnel = getPmPersonnel(projectSize);
+        document.getElementById('pmPersonnel').textContent = pmPersonnel.toFixed(1);
+
+        let propRatioSum = 0;
+        let propPageSum = 0;
+        let propPersSum = 0;
+        let propMMSum = 0;
+        let totalPageSum = 0;
+
+        sections.forEach((sec, idx) => {
+            const pages = sec.pages;
+            const diffFactor = diffFactors[sec.diffStr];
+            
+            let score = pages * diffFactor;
+            let expFactor = (noExperience && sec.needExpAdj) ? 1.2 : 1.0;
+            score = score * expFactor;
+            let scaledScore = score * scaleFactor;
+
+            let personnel = scaledScore / personnelDivisor;
+            let mm = personnel * mmMultiplier;
+
+            document.getElementById(`pers_${idx}`).textContent = personnel.toFixed(1);
+            document.getElementById(`mm_${idx}`).textContent = mm.toFixed(1);
+
+            if (sec.type === 'proposal') {
+                propRatioSum += sec.ratio;
+                propPageSum += pages;
+                propPersSum += personnel;
+                propMMSum += mm;
+            }
+            totalPageSum += pages;
+        });
+
+        const pmMM = pmPersonnel * mmMultiplier;
+        document.getElementById('pmMM').textContent = pmMM.toFixed(1);
+
+        let finalPersSum = propPersSum;
+        let finalMMSum = propMMSum;
+        for (let i = 8; i < sections.length; i++) {
+            finalPersSum += parseFloat(document.getElementById(`pers_${i}`).textContent) || 0;
+            finalMMSum += parseFloat(document.getElementById(`mm_${i}`).textContent) || 0;
+        }
+
+        const grandTotalPers = finalPersSum + pmPersonnel;
+        const grandTotalMM = finalMMSum + pmMM;
+
+        document.getElementById('propRatioSum').textContent = propRatioSum.toFixed(1);
+        document.getElementById('propPageSum').textContent = propPageSum;
+        document.getElementById('propPersonnelSum').textContent = propPersSum.toFixed(1);
+        document.getElementById('propMMSum').textContent = propMMSum.toFixed(1);
+
+        document.getElementById('totalPageSum').textContent = totalPageSum;
+        document.getElementById('totalPersonnel').textContent = grandTotalPers.toFixed(1);
+        document.getElementById('totalMM').textContent = grandTotalMM.toFixed(1);
+
+        // 표준 4단계 수식 적용 및 하단 요약 카드 바인딩
+        const internalCost = grandTotalMM * unitCost * kpiReduction; 
+        const externalCost = projectSize * externalRatio * kpiReduction;
+        const totalCost = internalCost + externalCost;
+
+        document.getElementById('internalCost').textContent = internalCost.toFixed(4);
+        document.getElementById('externalCost').textContent = externalCost.toFixed(4);
+        document.getElementById('totalCost').textContent = totalCost.toFixed(4);
+    }
+
+    initTableStructure();
+</script>
+</body>
+</html>

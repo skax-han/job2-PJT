@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>규모시뮬레이션</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --pastel-yellow: #fff8d6;
+      --pastel-blue:  #e8f3ff;
+      --line:#d9e1ec;
+      --text:#1f2a37;
+      --muted:#6b7280;
+      --primary:#2563eb;
+      --good:#0f9d58;
+      --warn:#f59e0b;
+      --danger:#dc2626;
+      --table-head:#eef4ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+    }
+    .wrap{
+      max-width:1600px;
+      margin:0 auto;
+      padding:24px;
+    }
+    h1{margin:0 0 16px;font-size:24px}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:16px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 2px 10px rgba(15,23,42,.04);
+    }
+    .span-12{grid-column:span 12}
+    .span-6{grid-column:span 6}
+    .span-4{grid-column:span 4}
+    .span-3{grid-column:span 3}
+    .span-8{grid-column:span 8}
+    .span-9{grid-column:span 9}
+    .span-5{grid-column:span 5}
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    input, select, button, textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:14px;
+      background:#fff;
+      color:var(--text);
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+    .row{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .kpi{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    .kpi-box{
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fbfdff;
+    }
+    .kpi-box .t{
+      font-size:12px;color:var(--muted);margin-bottom:8px;
+    }
+    .kpi-box .v{
+      font-size:22px;font-weight:700;
+    }
+    .sub{
+      font-size:12px;color:var(--muted);margin-top:4px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:13px;
+    }
+    th, td{
+      border:1px solid var(--line);
+      padding:8px;
+      vertical-align:middle;
+    }
+    th{
+      background:var(--table-head);
+      text-align:center;
+      font-weight:700;
+    }
+    td input, td select{
+      width:100%;
+      border:none;
+      padding:8px 6px;
+      border-radius:8px;
+      background:transparent;
+    }
+    /* user-editable inputs highlighted pastel yellow */
+    input.user-input, select.user-input, textarea.user-input{
+      background:var(--pastel-yellow);
+    }
+    /* auto-calculated values highlighted pastel blue */
+    input.auto-calc, .auto-calc{
+      background:var(--pastel-blue);
+      border-radius:8px;
+      padding:4px 6px;
+    }
+    td input:focus, td select:focus{
+      box-shadow:none;
+      outline:none;
+      background:#f8fbff;
+    }
+    .btnbar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    button{
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .btn-ghost{background:#fff}
+    .btn-danger{background:#fff;color:var(--danger);border-color:#f1b4b4}
+    .btn-small{
+      padding:7px 10px;
+      font-size:12px;
+      width:auto;
+    }
+    .text-right{text-align:right}
+    .text-center{text-align:center}
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.6;
+    }
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .section-title h2{
+      margin:0;
+      font-size:18px;
+    }
+    .summary-table td{
+      text-align:right;
+    }
+    .summary-table td:first-child{
+      text-align:left;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      background:#eef4ff;
+      color:#1747b5;
+    }
+    @media (max-width: 1100px){
+      .span-12,.span-9,.span-8,.span-6,.span-5,.span-4,.span-3{grid-column:span 12}
+      .kpi{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width: 640px){
+      .kpi{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>제안 예산 시뮬레이션</h1>
+
+  <div class="grid">
+    <div class="card span-12">
+      <div class="section-title">
+        <h2>기본 정보</h2>
+        <span class="pill">자동 계산</span>
+      </div>
+
+      <div class="row">
+        <div style="grid-column:span 4">
+          <label>사업명</label>
+          <input id="bizName" class="user-input" type="text" value="대내 사업" />
+        </div>
+        <div style="grid-column:span 4">
+          <label>사업규모(억원, VAT 별도)</label>
+          <input id="bizSize" class="user-input" type="number" step="0.1" value="10" />
+        </div>
+        <div style="grid-column:span 4">
+          <label>제안기간(Working, 일)</label>
+          <input id="proposalWorkingDays" class="auto-calc" type="text" readonly value="" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="grid-column:span 3">
+          <label>RFP 공고일</label>
+          <input id="rfpDate" class="user-input" type="date" value="2026-06-01" />
+        </div>
+        <div style="grid-column:span 3">
+          <label>제출일</label>
+          <input id="submitDate" class="user-input" type="date" value="2026-06-15" />
+        </div>
+        <div style="grid-column:span 3">
+          <label>사업기간 시작</label>
+          <input id="projectStart" class="user-input" type="date" value="2026-07-01" />
+        </div>
+        <div style="grid-column:span 3">
+          <label>사업기간 종료</label>
+          <input id="projectEnd" class="user-input" type="date" value="2026-12-30" />
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-box">
+          <div class="t">제안기간 일수</div>
+          <div class="v auto-calc" id="proposalDays">0</div>
+          <div class="sub">달력 기준 일수</div>
+        </div>
+        <div class="kpi-box">
+          <div class="t">사업기간 개월</div>
+          <div class="v auto-calc" id="projectMonths">0.0</div>
+          <div class="sub">시작~종료 기준</div>
+        </div>
+        <div class="kpi-box">
+          <div class="t">적정예산</div>
+          <div class="v auto-calc" id="budgetTotal">0.00</div>
+          <div class="sub">억원</div>
+        </div>
+        <div class="kpi-box">
+          <div class="t">25% 절감 반영</div>
+          <div class="v auto-calc" id="budgetAfterOIQ">0.00</div>
+          <div class="sub">억원</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card span-12">
+      <div class="section-title">
+        <h2>목차별 산정 테이블</h2>
+        <div class="btnbar">
+          <button class="btn-small btn-ghost" onclick="addRow()">행 추가</button>
+          <button class="btn-small btn-ghost" onclick="resetRows()">기본값 복원</button>
+        </div>
+      </div>
+
+      <div style="overflow:auto">
+        <table id="itemsTable">
+          <thead>
+            <tr>
+              <th style="min-width:220px">목차</th>
+              <th style="min-width:80px">페이지</th>
+              <th style="min-width:110px">난이도</th>
+              <th style="min-width:110px">경험</th>
+              <th style="min-width:110px">규모</th>
+              <th style="min-width:110px">소요인력</th>
+              <th style="min-width:110px">소요M/M</th>
+              <th style="min-width:120px">보정결과</th>
+              <th style="min-width:80px">삭제</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note" style="margin:12px 0 0">
+        난이도 보정값은 입력값 그대로 사용합니다. 예: A=2.5, B=1.5, C=1, D=0.5, E=0.2, S=4.
+      </p>
+    </div>
+
+    <div class="card span-12">
+      <div class="section-title">
+        <h2>보정 결과 요약</h2>
+      </div>
+
+      <table class="summary-table">
+        <tbody>
+          <tr>
+            <td>제안비_인건비</td>
+            <td id="laborCost">0.00</td>
+          </tr>
+          <tr>
+            <td>제안비_인건비 외</td>
+            <td id="otherCost">0.00</td>
+          </tr>
+          <tr>
+            <td>제안비 계</td>
+            <td id="proposalTotal">0.00</td>
+          </tr>
+          <tr>
+            <td>25% 절감 반영</td>
+            <td id="proposalTotalOIQ">0.00</td>
+          </tr>
+          <tr>
+            <td>사업규모 대비</td>
+            <td id="ratioToBiz">0.0000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const defaultRows = [
+    { name:"제안서", pages:100, difficulty:"1", experience:"O", scale:"0.8" },
+    { name:"제안개요 (사업의 이해 등)", pages:4, difficulty:"B", experience:"X", scale:"1" },
+    { name:"사업추진전략 및 방법론", pages:12, difficulty:"A", experience:"X", scale:"1" },
+    { name:"제안사 현황 - 컨소/BP 포함", pages:10, difficulty:"D", experience:"O", scale:"1" },
+    { name:"기술 및 기능", pages:38, difficulty:"B", experience:"X", scale:"1" },
+    { name:"아키텍처", pages:2, difficulty:"S", experience:"X", scale:"1" },
+    { name:"성능 및 품질 관리", pages:12, difficulty:"B", experience:"X", scale:"1" },
+    { name:"사업관리 부문", pages:11, difficulty:"C", experience:"O", scale:"1" },
+    { name:"사업 지원 부문", pages:11, difficulty:"D", experience:"O", scale:"1" },
+    { name:"제안서 요약본", pages:0, difficulty:"C", experience:"O", scale:"1" },
+    { name:"설명회", pages:0, difficulty:"A", experience:"O", scale:"1" },
+    { name:"별첨", pages:0, difficulty:"E", experience:"O", scale:"1" }
+  ];
+
+  const diffMap = { S:4, A:2.5, B:1.5, C:1, D:0.5, E:0.2 };
+  const expMap = { O:1, X:1.2 };
+
+  const scaleItems = [
+    { min:0, max:20, factor:0.8 },
+    { min:20, max:50, factor:0.8 },
+    { min:50, max:100, factor:0.9 },
+    { min:100, max:250, factor:1.0 },
+    { min:250, max:500, factor:0.9 },
+    { min:500, max:Infinity, factor:0.8 }
+  ];
+
+  function getBizScaleFactor(bizSize){
+    for(const row of scaleItems){
+      if(bizSize >= row.min && bizSize < row.max) return row.factor;
+    }
+    return 1;
+  }
+
+  function getPageScaleFactor(perPage){
+    if(perPage < 0.1) return 0.4;
+    if(perPage < 0.3) return 0.7;
+    if(perPage < 0.5) return 0.8;
+    if(perPage < 0.8) return 0.9;
+    if(perPage < 1) return 1.0;
+    return 1.1;
+  }
+
+  function fmt(n, d=2){
+    return Number(n || 0).toFixed(d);
+  }
+
+  function getDateValue(id){
+    return document.getElementById(id).value;
+  }
+
+  function daysBetween(a, b){
+    const d1 = new Date(a);
+    const d2 = new Date(b);
+    const diff = (d2 - d1) / (1000*60*60*24);
+    return Math.max(0, Math.round(diff));
+  }
+
+  function monthsBetween(a, b){
+    const d1 = new Date(a);
+    const d2 = new Date(b);
+    return Math.max(0, (d2 - d1) / (1000*60*60*24*30.4375));
+  }
+
+  function addRow(data = { name:"", pages:0, difficulty:"C", experience:"O", scale:"1" }){
+    const tbody = document.querySelector("#itemsTable tbody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="name user-input" type="text" value="${data.name}" /></td>
+      <td><input class="pages text-right user-input" type="number" step="1" value="${data.pages}" /></td>
+      <td>
+        <select class="difficulty user-input">
+          ${Object.keys(diffMap).map(k => `<option value="${k}" ${k===data.difficulty?'selected':''}>${k}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="experience user-input">
+          ${Object.keys(expMap).map(k => `<option value="${k}" ${k===data.experience?'selected':''}>${k}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="scale text-right user-input" type="number" step="0.1" value="${data.scale}" /></td>
+      <td class="result manpower text-right auto-calc">0.00</td>
+      <td class="result mm text-right auto-calc">0.00</td>
+      <td class="result total text-right auto-calc">0.00</td>
+      <td class="text-center"><button class="btn-small btn-danger" onclick="this.closest('tr').remove(); recalc();">삭제</button></td>
+    `;
+    tbody.appendChild(tr);
+    tr.querySelectorAll("input,select").forEach(el => el.addEventListener("input", recalc));
+    recalc();
+  }
+
+  function resetRows(){
+    const tbody = document.querySelector("#itemsTable tbody");
+    tbody.innerHTML = "";
+    defaultRows.forEach(r => addRow(r));
+    recalc();
+  }
+
+  function recalc(){
+    const bizSize = parseFloat(document.getElementById("bizSize").value || 0);
+    const rfpDate = getDateValue("rfpDate");
+    const submitDate = getDateValue("submitDate");
+    const projectStart = getDateValue("projectStart");
+    const projectEnd = getDateValue("projectEnd");
+
+    const proposalDays = daysBetween(rfpDate, submitDate);
+    const projectMonths = monthsBetween(projectStart, projectEnd);
+
+    document.getElementById("proposalDays").textContent = proposalDays;
+    document.getElementById("projectMonths").textContent = fmt(projectMonths, 1);
+
+    // update visible proposal period (auto-calculated)
+    const proposalField = document.getElementById("proposalWorkingDays");
+    proposalField.value = `${rfpDate || '-'} ~ ${submitDate || '-'} (${proposalDays}일)`;
+
+    const bizScaleFactor = getBizScaleFactor(bizSize);
+    const pageScaleFactor = getPageScaleFactor(bizSize / Math.max(proposalDays, 1));
+
+    let sumManpower = 0;
+    let sumMM = 0;
+
+    document.querySelectorAll("#itemsTable tbody tr").forEach(tr => {
+      const pages = parseFloat(tr.querySelector(".pages").value || 0);
+      const diffKey = tr.querySelector(".difficulty").value;
+      const expKey = tr.querySelector(".experience").value;
+      const itemScale = parseFloat(tr.querySelector(".scale").value || 1);
+
+      const diffFactor = diffMap[diffKey] || 1;
+      const expFactor = expMap[expKey] || 1;
+      const pageFactor = pages;
+      const manpower = pageFactor * diffFactor * expFactor * itemScale * bizScaleFactor;
+      const mm = manpower * pageScaleFactor;
+      const total = manpower * mm;
+
+      tr.querySelector(".manpower").textContent = fmt(manpower, 2);
+      tr.querySelector(".mm").textContent = fmt(mm, 2);
+      tr.querySelector(".total").textContent = fmt(total, 2);
+
+      sumManpower += manpower;
+      sumMM += mm;
+    });
+
+    const laborCost = sumManpower * 0.0835;      // 기준 단가 가정
+    const otherCost = bizSize * 0.0025;          // 사업규모의 0.25%
+    const proposalTotal = laborCost + otherCost;
+    const proposalTotalOIQ = proposalTotal * 0.75;
+    const ratioToBiz = proposalTotalOIQ / Math.max(bizSize, 0.0001);
+
+    document.getElementById("laborCost").textContent = fmt(laborCost, 2);
+    document.getElementById("otherCost").textContent = fmt(otherCost, 2);
+    document.getElementById("proposalTotal").textContent = fmt(proposalTotal, 2);
+    document.getElementById("proposalTotalOIQ").textContent = fmt(proposalTotalOIQ, 2);
+    document.getElementById("budgetTotal").textContent = fmt(proposalTotal, 2);
+    document.getElementById("budgetAfterOIQ").textContent = fmt(proposalTotalOIQ, 2);
+    document.getElementById("ratioToBiz").textContent = fmt(ratioToBiz, 4);
+  }
+
+  ["bizName","bizSize","rfpDate","submitDate","projectStart","projectEnd"].forEach(id => {
+    document.getElementById(id).addEventListener("input", recalc);
+    document.getElementById(id).addEventListener("change", recalc);
+  });
+
+  resetRows();
+</script>
+</body>
+</html>
